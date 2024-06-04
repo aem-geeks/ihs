@@ -1,14 +1,28 @@
 footer {
+  margin: 0;
   padding: 2rem;
-  background-color: var(--light-color);
-  font-size: var(--body-font-size-s);
+  text-align: center;
+  background-color: var(--bright-gray);
 }
+
 
 footer .footer {
   max-width: 1200px;
   margin: auto;
 }
 
-footer .footer p {
-  margin: 0;
+.footer.block a {
+  color: inherit;
+}
+
+.footer.block p > picture {
+  display: inline-block;
+  position: relative;
+  height: 36px;
+  width: auto;
+}
+
+.footer.block > div > div > p {
+  font-size: var(--body-font-size-xxs);
+  margin-bottom: 14px;
 }

@@ -1,18 +1,23 @@
-import { createOptimizedPicture } from '../../scripts/aem.js';
+/* eslint-disable import/no-named-default */
+import { default as icon } from './icon.js';
+import { default as product } from './product.js';
+import { default as iconCta } from './icon-cta.js';
+import { default as profile } from './profile.js';
+import { default as cta } from './cta.js';
+/* eslint-enable import/no-named-default */
 
-export default function decorate(block) {
-  /* change to ul, li */
-  const ul = document.createElement('ul');
-  [...block.children].forEach((row) => {
-    const li = document.createElement('li');
-    while (row.firstElementChild) li.append(row.firstElementChild);
-    [...li.children].forEach((div) => {
-      if (div.children.length === 1 && div.querySelector('picture')) div.className = 'cards-card-image';
-      else div.className = 'cards-card-body';
-    });
-    ul.append(li);
-  });
-  ul.querySelectorAll('img').forEach((img) => img.closest('picture').replaceWith(createOptimizedPicture(img.src, img.alt, false, [{ width: '750' }])));
-  block.textContent = '';
-  block.append(ul);
+export default async function decorate(block) {
+  if (block.classList.contains('icon')) {
+    await icon(block);
+  } else if (block.classList.contains('icon-cta')) {
+    await iconCta(block);
+  } else if (block.classList.contains('product')) {
+    await product(block);
+  } else if (block.classList.contains('profile')) {
+    await profile(block);
+  } else if (block.classList.contains('cta')) {
+    await cta(block);
+  } else {
+    block.classList.add('default');
+  }
 }

@@ -1,0 +1,120 @@
+@font-face {
+  font-family: 'Open Sans Fallback';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Arial');
+  size-adjust: 105.43%;
+  ascent-override: 105%;
+}
+
+@font-face {
+  font-family: 'Open Sans Fallback';
+  font-style: italic;
+  font-weight: 400;
+  src: local('Arial Italic');
+  size-adjust: 105.43%;
+  ascent-override: 105%;
+}
+
+@font-face {
+  font-family: 'Open Sans Fallback';
+  font-style: normal;
+  font-weight: 600;
+  src: local('Arial Bold');
+  size-adjust: 105.43%;
+  ascent-override: 105%;
+}
+
+@font-face {
+  font-family: 'Open Sans Fallback';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Arial Bold');
+  size-adjust: 105.43%;
+  ascent-override: 105%;
+}
+
+:root {
+  /* Colors */
+  --bright-gray: #efefef;
+  --medium-gray: #ddd;
+  --gray: #979797;
+  --gray-box-shadow: rgb(0 0 0 / 20%);
+  --silver: #d8d8d8;
+  --quartz: #4c4948;
+  --red: #e10;
+  --white: #fff;
+  --blue: #003087;
+  --black-olive: #3a3a3a;
+  --black: black;
+  --cadet: #5B6770; /* gray-blue */
+  --gray-gradient-light: #edeff0;
+  --gray-gradient-dark: #9da8af; /* Gradient breakpoint is defined below */
+
+  /* Brand Colors */
+  --gammagard-liq: #003087;
+  --gammagard-sd: #35a4d8;
+  --hyqvia: #500778;
+  --cuvitru: #485CC7;
+  --flexbumin: #3a6853;
+  --glassia: #573aa4;
+  --aralast: #3a6853;
+  --onepath: #00a9ec;
+  --myigsource: #a1e1b3;
+  --hello-programs: #808080;
+
+  /* Font Colors */
+  --default-text-color: var(--black-olive);
+
+  /* Fonts */
+  --font-family-opensans: 'Open Sans', 'Open Sans Fallback', 'Arial', sans-serif;
+  --body-font-family: var(--font-family-opensans);
+  --heading-font-family: var(--font-family-opensans);
+
+  /* Font Weights */
+  --font-weight-bold: 700;
+  --font-weight-semibold: 600;
+  --font-weight-normal: 400;
+  --font-weight-light: 300;
+  --font-weight-thin: 100;
+
+  /* Body */
+  --body-font-size-xxs: 10px;
+  --body-font-size-xs: 12px;
+  --body-font-size-s: 14px;
+  --body-font-size-m: 16px;
+  --body-font-size-l: 18px;
+  --body-font-size-xl: 20px;
+  --body-font-size-xxl: 24px;
+
+  /* Heading */
+  --heading-font-size-xxs: 18px;
+  --heading-font-size-xs: 20px;
+  --heading-font-size-s: 24px;
+  --heading-font-size-m: 26px;
+  --heading-font-size-l: 50px;
+  --heading-font-size-xl: 42px;
+
+  /* Nav Height */
+  --nav-height: 50px;
+
+  /* Line heights */
+  --line-height-xs: 1.15em;
+  --line-height-s: 1.25em;
+  --line-height-m: 1.5em;
+  --line-height-l: 1.75em;
+  --line-height-xl: 2em;
+  --line-height-xxl: 2.5em;
+  --line-height-xxxl: 2.9em;
+
+  /* Page Widths */
+  --normal-page-width: 1200px;
+  --wide-page-width: 1600px;
+  --full-page-width: 100vw;
+
+  /* Gradient breakpoints */
+  --gray-gradient-breakpoint: 41%;
+
+  /* Gradient angles */
+  --gray-gradient-angle: -180deg;
+}

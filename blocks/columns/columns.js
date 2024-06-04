@@ -1,18 +1,23 @@
-export default function decorate(block) {
-  const cols = [...block.firstElementChild.children];
-  block.classList.add(`columns-${cols.length}-cols`);
+import { decorateIcons } from '../../scripts/lib-franklin.js';
+
+export default async function decorate(block) {
+  let count;
 
   // setup image columns
   [...block.children].forEach((row) => {
-    [...row.children].forEach((col) => {
-      const pic = col.querySelector('picture');
-      if (pic) {
-        const picWrapper = pic.closest('div');
-        if (picWrapper && picWrapper.children.length === 1) {
-          // picture is only content in column
-          picWrapper.classList.add('columns-img-col');
-        }
+    if (!count) {
+      count = row.children.length;
+      block.classList.add(`columns-${count}-cols`);
+    }
+    row.classList.add('columns-row');
+    [...row.children].forEach((item) => {
+      item.classList.add('column-item');
+      const imgp = item.querySelector(':scope > p > picture');
+      if (imgp) {
+        imgp.parentElement.classList.add('image-wrapper');
       }
     });
   });
+
+  await decorateIcons(block);
 }

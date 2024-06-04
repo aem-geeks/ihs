@@ -1,6 +1,5 @@
 import {
   sampleRUM,
-  buildBlock,
   loadHeader,
   loadFooter,
   decorateButtons,
@@ -10,49 +9,194 @@ import {
   decorateTemplateAndTheme,
   waitForLCP,
   loadBlocks,
+  loadOverrideBlocks,
+  buildBlock,
   loadCSS,
-} from './aem.js';
+  readBlockConfig,
+  getMetadata,
+} from './lib-franklin.js';
 
-const LCP_BLOCKS = []; // add your LCP blocks to the list
+import { loadTheme } from './themeloader.js';
 
-/**
- * Builds hero block and prepends to main in a new section.
- * @param {Element} main The container element
- */
-function buildHeroBlock(main) {
-  const h1 = main.querySelector('h1');
-  const picture = main.querySelector('picture');
-  // eslint-disable-next-line no-bitwise
-  if (h1 && picture && (h1.compareDocumentPosition(picture) & Node.DOCUMENT_POSITION_PRECEDING)) {
-    const section = document.createElement('div');
-    section.append(buildBlock('hero', { elems: [picture, h1] }));
-    main.prepend(section);
+import {
+  integrateMartech,
+} from './third-party.js';
+
+export const BREAKPOINTS = {
+  small: window.matchMedia('(min-width: 600px)'),
+  medium: window.matchMedia('(min-width: 900px)'),
+  large: window.matchMedia('(min-width: 1200px)'),
+};
+
+const LCP_BLOCKS = ['hero']; // add your LCP blocks to the list
+
+function decorateSectionGradientTopper(main) {
+  const section = main.querySelector('.section.inverted-gradient-background');
+  const hasInvertedGradient = section !== null;
+
+  if (!hasInvertedGradient) return;
+
+  const hero = main.querySelector('& > .section.hero-container');
+
+  hero?.classList?.add('angled-inverted-background');
+}
+
+async function decorateDisclaimerModal() {
+  const main = document.querySelector('main');
+  const isModalAccepted = document.cookie.match(/\s*hcpModalDismiss=1;?/) !== null || window.location.search.indexOf('bypassModal') > -1 || window.hlx.lighthouse;
+  const shouldShowModal = !isModalAccepted || (document.location.href.indexOf('?showModal') > -1);
+  if (shouldShowModal) {
+    await loadCSS(`${window.hlx.codeBasePath}/blocks/disclaimer-modal/disclaimer-modal.css`);
+    const response = await fetch('/fragments/disclaimer-modal.plain.html');
+    document.body.style.overflowY = 'hidden';
+    if (response.ok) {
+      const html = await response.text();
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      const modal = tmp.querySelector('.disclaimer-modal');
+      const config = readBlockConfig(modal);
+      modal.innerHTML = `
+        <div class="title"><h2>${config.title}</h2></div>
+          <div class="content"><p> ${config.content}</p></div>
+          <div class="button-section">
+          <div class="agree"><p> ${config.agree}</p></div>
+          <div class="leave"><a class="link" href=" ${config.link} "> <p>${config.leave} </p></a></div>
+        </div>
+      `;
+      const disclaimerContainer = document.createElement('div');
+      disclaimerContainer.className = 'disclaimer-modal-container';
+      const disclaimerWrapper = document.createElement('div');
+      disclaimerWrapper.className = 'disclaimer-modal-wrapper';
+      disclaimerWrapper.appendChild(modal);
+      disclaimerContainer.appendChild(disclaimerWrapper);
+
+      const acceptButn = modal.querySelector('.agree');
+      acceptButn.addEventListener('click', () => {
+        const CookieDate = new Date();
+        CookieDate.setFullYear(CookieDate.getFullYear() + 5);
+        document.cookie = `hcpModalDismiss=1;path=/;expires=${CookieDate.toUTCString()};`;
+        document.body.style.overflowY = null;
+        disclaimerContainer.remove();
+      });
+      main.append(disclaimerContainer);
+    }
   }
+}
+/**
+ * Converts paagraphs that start with a `<sup>` element, to a p.reference paragraph.
+ * @param {HTMLElement} main
+ */
+function updateRefParagraphs(main) {
+  main.querySelectorAll('sup').forEach((sup) => {
+    if (!sup.previousSibling) {
+      sup.parentElement.classList.add('reference');
+      sup.remove();
+    }
+  });
 }
 
 /**
- * load fonts.css and set a session storage flag
+ * Builds the Floating Images auto-block sections.
+ *
+ * @param {HTMLElement} main
  */
-async function loadFonts() {
-  await loadCSS(`${window.hlx.codeBasePath}/styles/fonts.css`);
-  try {
-    if (!window.location.hostname.includes('localhost')) sessionStorage.setItem('fonts-loaded', 'true');
-  } catch (e) {
-    // do nothing
-  }
+function buildFloatingImages(main) {
+  main.querySelectorAll(':scope > div div.section-metadata').forEach((metadata) => {
+    let style;
+    [...metadata.querySelectorAll(':scope > div')].every((div) => {
+      const match = div.children[1]?.textContent.toLowerCase().trim().match(/(image[\s-](left|right))/i);
+      if (div.children[0]?.textContent.toLowerCase().trim() === 'style' && match) {
+        style = match[1].replaceAll(/\s/g, '-');
+        return false;
+      }
+      return true;
+    });
+    if (style) {
+      const section = metadata.parentElement;
+      const left = [];
+      const right = [];
+      [...section.children].forEach((child) => {
+        const picture = child.querySelector(':scope > picture');
+        if (picture) {
+          right.push(picture);
+          child.remove();
+        } else if (!child.classList.contains('section-metadata')) {
+          left.push(child);
+        }
+      });
+      const block = buildBlock('floating-images', [[{ elems: left }, { elems: right }]]);
+      block.classList.add(style);
+      section.prepend(block);
+    }
+  });
+}
+
+function buildSectionBackgroundImage(main) {
+  main.querySelectorAll(':scope > div div.section-metadata').forEach((metadata) => {
+    const keys = Object.keys(readBlockConfig(metadata));
+    const bgIdx = keys.indexOf(keys.find((k) => k.match(/background-image/i)));
+    if (bgIdx >= 0) {
+      const picture = metadata.children[bgIdx].children[1];
+      picture.querySelector('picture').classList.add('section-bg-image');
+      metadata.parentElement.append(picture.cloneNode(true));
+    }
+  });
 }
 
 /**
  * Builds all synthetic blocks in a container element.
- * @param {Element} main The container element
+ * @param {HTMLElement} main The container element
  */
 function buildAutoBlocks(main) {
   try {
-    buildHeroBlock(main);
+    updateRefParagraphs(main);
+    buildFloatingImages(main);
+    buildSectionBackgroundImage(main);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Auto Blocking failed', error);
   }
+}
+
+function fixDefaultImage(main) {
+  main.querySelectorAll(':scope .default-content-wrapper > p > picture > img').forEach((img) => {
+    const ratio = (parseInt(img.height, 10) / parseInt(img.width, 10)) * 100;
+    const picture = img.parentElement;
+    picture.style.paddingBottom = `${ratio}%`;
+    picture.parentElement.style.maxWidth = `${img.width}px`;
+    picture.parentElement.style.margin = '0 auto 1.5em';
+  });
+}
+
+/**
+ * Builds layout containers after all sections & blocks have been decorated.
+ * @param {HTMLElement} main
+ */
+export function buildLayoutContainers(main) {
+  main.querySelectorAll('.section[data-layout]').forEach((section) => {
+    const container = document.createElement('div');
+    container.classList.add('layout-content-wrapper');
+    const title = section.querySelector('.section-title-wrapper');
+    container.append(...section.children);
+    if (title) section.prepend(title);
+    section.append(container);
+
+    section.querySelectorAll('.separator-wrapper').forEach((sep) => {
+      sep.innerHTML = '<hr/>';
+    });
+  });
+}
+
+/**
+ * Decorates the previously created background image div.
+ * @param main
+ */
+function decorateSectionBackgroundImage(main) {
+  main.querySelectorAll(':scope div > picture.section-bg-image').forEach((picture) => {
+    const wrapper = picture.parentElement;
+    wrapper.classList.add('section-bg-image-wrapper');
+    wrapper.parentElement.replaceWith(wrapper);
+  });
 }
 
 /**
@@ -66,7 +210,11 @@ export function decorateMain(main) {
   decorateIcons(main);
   buildAutoBlocks(main);
   decorateSections(main);
+  fixDefaultImage(main);
   decorateBlocks(main);
+  buildLayoutContainers(main);
+  decorateSectionBackgroundImage(main);
+  decorateSectionGradientTopper(main);
 }
 
 /**
@@ -82,15 +230,34 @@ async function loadEager(doc) {
     document.body.classList.add('appear');
     await waitForLCP(LCP_BLOCKS);
   }
+}
 
-  try {
-    /* if desktop (proxy for fast connection) or fonts already loaded, load fonts.css */
-    if (window.innerWidth >= 900 || sessionStorage.getItem('fonts-loaded')) {
-      loadFonts();
-    }
-  } catch (e) {
-    // do nothing
+/**
+ * Adds the favicon.
+ * @param {string} href The favicon URL
+ */
+export function addFavIcon(href) {
+  const link = document.createElement('link');
+  link.rel = 'icon';
+  link.type = 'image/png';
+  link.href = href;
+  const existingLink = document.querySelector('head link[rel="icon"]');
+  if (existingLink) {
+    existingLink.parentElement.replaceChild(link, existingLink);
+  } else {
+    document.getElementsByTagName('head')[0].appendChild(link);
   }
+}
+
+/**
+ * Initializes the PartyTown library for processing third-party libraries.
+ */
+function initPartytown() {
+  window.partytown = {
+    lib: '/scripts/partytown/',
+    forward: ['dataLayer.push'],
+  };
+  import('./partytown/partytown.js');
 }
 
 /**
@@ -100,6 +267,11 @@ async function loadEager(doc) {
 async function loadLazy(doc) {
   const main = doc.querySelector('main');
   await loadBlocks(main);
+  const theme=getMetadata("theme");
+  if(theme){
+    await loadOverrideBlocks(main);
+  }
+  
 
   const { hash } = window.location;
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
@@ -109,11 +281,12 @@ async function loadLazy(doc) {
   loadFooter(doc.querySelector('footer'));
 
   loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
-  loadFonts();
-
+  addFavIcon(`${window.hlx.codeBasePath}/icons/favicon.png`);
   sampleRUM('lazy');
   sampleRUM.observe(main.querySelectorAll('div[data-block-name]'));
   sampleRUM.observe(main.querySelectorAll('picture > img'));
+  integrateMartech();
+  initPartytown();
 }
 
 /**
@@ -127,6 +300,8 @@ function loadDelayed() {
 }
 
 async function loadPage() {
+  loadTheme();
+  decorateDisclaimerModal();
   await loadEager(document);
   await loadLazy(document);
   loadDelayed();
