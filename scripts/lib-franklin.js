@@ -430,7 +430,6 @@ export async function loadOverrideBlock(block) {
       const cssLoaded = new Promise((resolve) => {
         (async () => {
           try {
-            console.log(`${window.hlx.codeBasePath}/theme/${theme}/blocks/${blockName}.css`);
             const css = loadCSS(`${window.hlx.codeBasePath}/theme/${theme}/blocks/${blockName}.css`);
           } catch (error) {
             // eslint-disable-next-line no-console
