@@ -118,3 +118,20 @@
   /* Gradient angles */
   --gray-gradient-angle: -180deg;
 }
+
+h1, h2, h3 {
+  font-family: var(--heading-font-family);
+  font-weight: var(--font-weight-bold);
+  color: var(--black);
+}
+
+@media screen and (min-width: 900px) {
+  h1 {
+    font-size: var(--heading-font-size-xl);
+  }
+
+  h2 {
+    font-size: var(--heading-font-size-l);
+    color: var(--red);
+  }
+}
